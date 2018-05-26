@@ -2,19 +2,35 @@ extern crate actix_web;
 extern crate listenfd;
 
 use listenfd::ListenFd;
-use actix_web::{server, App, HttpRequest, Responder};
+use actix_web::{server, App, HttpRequest, http};
+use std::cell::Cell;
 
-fn index(_req: HttpRequest) -> impl Responder {
-    "Hello World!"
+struct AppState {
+    counter: Cell<usize>
+}
+
+fn index(req: HttpRequest<AppState>) -> String {
+    let count = req.state().counter.get() + 1;
+    req.state().counter.set(count);
+
+    format!("Request number: {}", count)
 }
 
 fn main() {
     let mut listenfd = ListenFd::from_env();
     let mut server = server::new(|| {
-        App::new()
-            .resource("/", |r| r.f(index))
+        vec![
+            App::with_state(AppState { counter: Cell::new(0) } )
+                .prefix("/counter")
+                .resource("/", |r| r.method(http::Method::GET).f(index))
+                .boxed(),
+            App::with_state(AppState { counter: Cell::new(0) } )
+                .prefix("/counter2")
+                .resource("/", |r| r.method(http::Method::GET).f(index))
+                .boxed(),
+        ]
     });
-    
+
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
         server.listen(l)
     } else {
