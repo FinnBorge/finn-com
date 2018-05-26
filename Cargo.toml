@@ -1,7 +1,8 @@
 [package]
-name = "finnborge_com"
+name = "finn-com"
 version = "0.1.0"
 authors = ["f <finnborge@gmail.com>"]
 
 [dependencies]
 actix-web = "0.6"
+listenfd = "0.3"
